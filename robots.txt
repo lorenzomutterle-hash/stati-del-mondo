@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stati-del-mondo.vercel.app/sitemap.xml
