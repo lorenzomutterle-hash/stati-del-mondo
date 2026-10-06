@@ -8950,7 +8950,7 @@
     // additionally guaranteed (see build_data.mjs) to never overlap another dot's own circle, so
     // giving dots priority here can only ever affect clicks genuinely close to that one small
     // country — never create ambiguity between two different dots.
-    var hitRatio = currentZoomRatio(), hitPxPerUnit = currentPxPerUnit();
+    var hitRatio = currentZoomRatio(), hitPxPerUnit = currentPxPerUnit(), touch = isTouchUI();
     // Nearest dot centre wins when a click falls inside more than one (uniform-size dots can touch
     // in the tightest clusters at the full world view -- see DOT_RADIUS_PX).
     var bestDot=null, bestD2=Infinity;
@@ -8960,11 +8960,23 @@
       // always exactly the visible circle, never smaller or bigger, at any zoom level or screen size.
       var r=dotRadiusForCountry(c, hitRatio, hitPxPerUnit);
       if(r<=0) continue;
+      // Da telefono il cerchio che "prende" il tocco e' un po' piu' largo di quello disegnato.
+      if(touch && hitPxPerUnit>0) r = Math.max(r, DOT_TOUCH_GRAB_PX/hitPxPerUnit);
       var dx=x-c.label[0], dy=y-c.label[1], d2=dx*dx+dy*dy;
       if(d2 <= r*r && d2 < bestD2){ bestD2=d2; bestDot=c; }
     }
     if(bestDot) return bestDot;
     for(var i=0;i<hitTestOrder.length;i++){ if(pointInFeature(x,y,hitTestOrder[i])) return hitTestOrder[i]; }
+    // Da telefono, un tocco finito nel mare vicino a un'isola/arcipelago va al pallino piu' vicino
+    // (mai sopra la terra: li' vince sempre lo stato che c'e' davvero sotto il dito).
+    if(touch && hitPxPerUnit>0){
+      var slop = DOT_TOUCH_SEA_SLOP_PX/hitPxPerUnit, near=null, nearD2=slop*slop;
+      for(var k=0;k<dotCountries.length;k++){
+        var dc=dotCountries[k], ex=x-dc.label[0], ey=y-dc.label[1], e2=ex*ex+ey*ey;
+        if(e2 <= nearD2){ nearD2=e2; near=dc; }
+      }
+      if(near) return near;
+    }
     return null;
   }
   function getSvgPoint(svgEl, clientX, clientY){
@@ -9372,9 +9384,17 @@
   // nearest dot centre, so the result is never ambiguous. Clicks use this exact same function, so the
   // visible circle is still exactly the clickable area.
   var DOT_RADIUS_PX = 3.2;
+  // SOLO SU TELEFONO/TABLET (puntatore "grossolano" = dito): il pallino e' un po' piu' grande e il tocco
+  // e' piu' tollerante, perche' un dito non riesce a centrare un cerchio di 6 px. Mouse/trackpad: invariato.
+  var DOT_RADIUS_PX_TOUCH = 4.6;     // raggio visibile del pallino da telefono
+  var DOT_TOUCH_GRAB_PX = 8;         // un tocco entro 8 px dal centro prende il pallino, anche sopra la terra
+  var DOT_TOUCH_SEA_SLOP_PX = 22;    // un tocco nel MARE entro 22 px prende il pallino piu' vicino
+  var touchMQ = null;
+  try{ touchMQ = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; }catch(e){}
+  function isTouchUI(){ return !!(touchMQ && touchMQ.matches); }
   function dotRadiusForCountry(c, ratio, pxPerUnit){
     if(!(pxPerUnit>0)) return 2;
-    return DOT_RADIUS_PX/pxPerUnit;
+    return (isTouchUI() ? DOT_RADIUS_PX_TOUCH : DOT_RADIUS_PX)/pxPerUnit;
   }
   // Same fixed-at-full-zoom-out-reference idea as the dots, applied to the wrong-click X marker:
   // it stores its own "base" size (in viewBox units, calibrated for camera.w === DATA.viewBox[0])
