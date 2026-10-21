@@ -670,6 +670,29 @@
   .av-opt .av-name{ font-size:.76rem; font-weight:800; }
   .av-opt.sel .av-name{ color:var(--accent-strong); }
   .av-opt .av-taken{ position:absolute; top:0; right:2px; min-width:22px; height:22px; padding:0 5px; border-radius:11px; background:var(--surface); border:2px solid var(--line-soft); font-size:.7rem; font-weight:800; line-height:18px; color:var(--ink-soft); }
+
+  /* ---- Sfida: risposta scritta ---- */
+  .ch-pick-input{ margin-top:10px; }
+  .ch-type-row{ display:flex; gap:8px; width:100%; max-width:520px; height:62px; }
+  .ch-type{ flex:1; min-width:0; height:62px; border-radius:18px; border:2px solid var(--line-soft); background:var(--paper-2); color:var(--ink); padding:0 16px; font-family:'Fredoka','Nunito',sans-serif; font-weight:600; font-size:1.25rem; box-shadow:inset 0 2px 0 rgba(0,0,0,.04); }
+  .ch-type:focus{ outline:none; border-color:#8CCFE0; background:var(--surface); box-shadow:0 0 0 4px color-mix(in srgb, #8CCFE0 35%, transparent); }
+  .ch-send{ flex:none; height:62px; padding:0 20px; border:0; border-radius:18px; cursor:pointer; background:#2F9468; color:#fff; box-shadow:0 4px 0 #1F6F5C; font-family:'Fredoka','Nunito',sans-serif; font-weight:600; font-size:1.15rem; touch-action:manipulation; }
+  .ch-send:active{ transform:translateY(3px); box-shadow:0 1px 0 #1F6F5C; }
+  .ch-suggest{ height:34px; flex:none; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:800; font-size:.95rem; color:var(--ink-soft); visibility:hidden; }
+  .ch-suggest.on{ visibility:visible; }
+  .ch-sug-btn{ border:2px solid #E0B64A; background:#FFF1C9; color:#3A2E0A; border-radius:12px; padding:3px 10px; font:inherit; font-family:'Fredoka','Nunito',sans-serif; font-weight:600; font-size:1rem; cursor:pointer; box-shadow:0 2px 0 #EFD58A; max-width:60vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ch-kbd{ font-family:'Nunito',sans-serif; font-size:.72rem; font-weight:800; border:1.5px solid var(--line); border-bottom-width:3px; border-radius:6px; padding:0 5px; color:var(--ink-soft); }
+  @media (pointer:coarse){ .ch-kbd{ display:none; } }
+  .ch-result.timeout{ background:#FFE6DA; color:#8A3A1E; }
+
+  /* ---- Sfida V46: "Non la so", errore senza avanzare, tempo infinito ---- */
+  .ch-skip{ flex:none; height:62px; padding:0 16px; border:0; border-radius:18px; cursor:pointer; background:#FFE6DA; color:#8A3A1E; box-shadow:0 4px 0 #EBB9A3; font-family:'Fredoka','Nunito',sans-serif; font-weight:600; font-size:1.05rem; white-space:nowrap; touch-action:manipulation; }
+  .ch-skip:active{ transform:translateY(3px); box-shadow:0 1px 0 #EBB9A3; }
+  .ch-suggest.err{ color:#B8502C; }
+  .ch-type.shake{ animation:chShake .35s ease; border-color:#FF9F7A; }
+  @keyframes chShake{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-7px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(3px); } }
+  .ch-inf{ font-family:'Fredoka','Nunito',sans-serif; font-weight:600; font-size:1.6rem; color:var(--ink-soft); line-height:1; }
+  @media (max-width:480px){ .ch-type-row{ gap:6px; } .ch-type{ padding:0 12px; font-size:1.1rem; } .ch-send{ padding:0 12px; font-size:1rem; } .ch-skip{ padding:0 10px; font-size:.95rem; } }
 </style>
 
 <div id="app">
@@ -722,7 +745,7 @@
         <span class="t-icon"><svg class="i" viewBox="0 0 32 32" fill="none" stroke="#9A6700" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 8 H7.5 a2.8 2.8 0 0 0 0 5.6 H10.5 M22 8 H24.5 a2.8 2.8 0 0 1 0 5.6 H21.5"/><path d="M10 5 h12 v7 a6 6 0 0 1 -12 0 Z" fill="#FFD166"/><path d="M16 18 v4"/><rect x="10.5" y="22" width="11" height="5.5" rx="2.2" fill="#FFD166"/><path d="M13.5 8 v3" stroke="#FFFFFF" stroke-width="2"/></svg></span>
         <span class="tc-body">
           <h3 data-i18n="tile.challenge.label">Challenge</h3>
-          <p data-i18n="tile.challenge.desc">1 to 6 players, out loud and against the clock: take turns, most points wins.</p>
+          <p data-i18n="tile.challenge.desc">1 to 6 players against the clock, out loud or by typing: take turns, most points wins.</p>
           <span class="cta" data-i18n="tile.challenge.cta">Set up a challenge →</span>
         </span>
       </button>
@@ -1001,12 +1024,13 @@
     <div class="ch-wrap">
       <div class="back-row"><button class="icon-btn" id="btn-back-challenge" data-i18n="back.menu">← Menu</button></div>
       <h2 data-i18n="ch.title">Challenge</h2>
-      <p class="ch-intro" data-i18n="ch.intro">Played out loud: a question appears and whoever’s turn it is answers before time runs out.</p>
+      <p class="ch-intro" data-i18n="ch.intro">A question appears and whoever’s turn it is answers before time runs out, out loud or by typing.</p>
       <div class="form-card">
         <div class="field-group">
           <div class="ch-pick"><span class="ch-pick-lbl" data-i18n="ch.guess.title">Guess:</span><div class="ch-pick-opts" id="ch-guess" role="radiogroup"></div></div>
           <div class="ch-pick"><span class="ch-pick-lbl" data-i18n="ch.from.title">From:</span><div class="ch-pick-opts" id="ch-from" role="radiogroup"></div></div>
           <div class="ch-example" id="ch-example"></div>
+          <div class="ch-pick ch-pick-input"><span class="ch-pick-lbl" data-i18n="ch.input.title">Rispondi:</span><div class="ch-pick-opts" id="ch-input" role="radiogroup"></div></div>
         </div>
         <div class="ch-steppers" id="ch-steppers"></div>
         <div class="field-group">
@@ -8441,16 +8465,32 @@
       'footer.credit':'Confini semplificati (Natural Earth, 1:50m) — dati di superficie e capitali a scopo didattico. Bandiere: progetto open-source flag-icons.',
       'doc.title':'Stati del Mondo – Quiz su stati, capitali e bandiere sulla cartina',
       "tile.challenge.label":"Sfida",
-      "tile.challenge.desc":"Da 1 a 6 giocatori, a voce e a tempo: un turno a testa, vince chi fa più punti.",
+      "tile.challenge.desc":"Da 1 a 6 giocatori, a tempo, a voce o scrivendo: un turno a testa, vince chi fa più punti.",
       "tile.challenge.cta":"Organizza una sfida →",
       "ch.title":"Sfida",
-      "ch.intro":"Si gioca a voce: compare la domanda, chi è di turno risponde ad alta voce prima che scada il tempo.",
+      "ch.intro":"Compare una domanda: chi è di turno risponde prima che scada il tempo, a voce o scrivendo.",
       "ch.guess.title":"Indovina:",
       "ch.from.title":"Da:",
       "ch.kind.state":"Stato",
       "ch.kind.cap":"Capitale",
       "ch.kind.flag":"Bandiera",
       "ch.example":"Esempio:",
+      "ch.type.skip":"Non la so",
+      "ch.type.wrong":"«{t}» non è giusta, riprova",
+      "ch.secs.inf":"Senza limite",
+      "ch.summary.inf":"{q} domande in tutto · senza limite di tempo",
+      "ch.summary.inf.one":"{q} domanda in tutto · senza limite di tempo",
+      "ch.show.hint.inf":"Nessun limite di tempo",
+      "ch.show.hint.text.inf":"Nessun limite di tempo · Invio per rispondere",
+      "ch.input.title":"Rispondi:",
+      "ch.input.voice":"A voce",
+      "ch.input.text":"Scrivendo",
+      "ch.type.ph":"La tua risposta…",
+      "ch.type.send":"Invia",
+      "ch.suggest":"Intendi:",
+      "ch.res.wrong":"Risposta sbagliata",
+      "ch.typed":"Hai scritto: «{t}»",
+      "ch.show.hint.text":"Il tempo parte subito: {s} secondi · Invio per rispondere",
       "ch.mode.flag2cap":"Bandiera → Capitale",
       "ch.mode.cap2flag":"Capitale → Bandiera",
       "ch.q.flag2cap":"Qual è la capitale di questo stato?",
@@ -8647,16 +8687,32 @@
       'footer.credit':'Simplified borders (Natural Earth, 1:50m) — area and capital data for educational use. Flags: open-source flag-icons project.',
       'doc.title':'Countries of the World Quiz – Map game with capitals and flags',
       "tile.challenge.label":"Challenge",
-      "tile.challenge.desc":"1 to 6 players, out loud and against the clock: take turns, most points wins.",
+      "tile.challenge.desc":"1 to 6 players against the clock, out loud or by typing: take turns, most points wins.",
       "tile.challenge.cta":"Set up a challenge →",
       "ch.title":"Challenge",
-      "ch.intro":"Played out loud: a question appears and whoever’s turn it is answers before time runs out.",
+      "ch.intro":"A question appears and whoever’s turn it is answers before time runs out, out loud or by typing.",
       "ch.guess.title":"Guess:",
       "ch.from.title":"From:",
       "ch.kind.state":"Country",
       "ch.kind.cap":"Capital",
       "ch.kind.flag":"Flag",
       "ch.example":"Example:",
+      "ch.type.skip":"I don’t know",
+      "ch.type.wrong":"“{t}” is not right, try again",
+      "ch.secs.inf":"No limit",
+      "ch.summary.inf":"{q} questions in total · no time limit",
+      "ch.summary.inf.one":"{q} question in total · no time limit",
+      "ch.show.hint.inf":"No time limit",
+      "ch.show.hint.text.inf":"No time limit · Enter to answer",
+      "ch.input.title":"Answer:",
+      "ch.input.voice":"Out loud",
+      "ch.input.text":"By typing",
+      "ch.type.ph":"Your answer…",
+      "ch.type.send":"Send",
+      "ch.suggest":"Did you mean:",
+      "ch.res.wrong":"Wrong answer",
+      "ch.typed":"You typed: “{t}”",
+      "ch.show.hint.text":"The clock starts right away: {s} seconds · Enter to answer",
       "ch.mode.flag2cap":"Flag → Capital",
       "ch.mode.cap2flag":"Capital → Flag",
       "ch.q.flag2cap":"What is this country’s capital?",
@@ -11206,8 +11262,8 @@
   var CH_MODES = ['cap2state','flag2state','state2cap','flag2cap'];
   function chFrom(mode){ return mode.split('2')[0]; }
   function chTo(mode){ return mode.split('2')[1]; }
-  var CH_SECS = [3,4,5,6,7,8,10,12,15,20,25,30,45,60];
-  var CH_ROUNDS = [1,2,3,4,5,6,7,8,9,10,12,15,20];
+  var CH_SECS = [3,4,5,6,7,8,10,12,15,20,25,30,45,60,0];   // 0 = senza limite
+  var CH_ROUNDS = [1,2,3,4,5,6,7,8,9,10,12,15,20,25,30,40,50,75,100];
   var CH_SIZES = ['all','top100','big'];
   var CH_COLORS = [
     {bg:'#D5F0E0', mid:'#6CC398', dark:'#1F6F5C'},
@@ -11226,7 +11282,7 @@
     no: '<svg class="i" viewBox="0 0 32 32" fill="none" stroke="#8A3A1E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="#FF9F7A" stroke="none"/><path d="M12 12 l8 8 M20 12 l-8 8" stroke="#FFFFFF"/></svg>'
   };
   var CH = {
-    settings: { mode:'cap2state', secs:5, players:2, rounds:5, size:'all' },
+    settings: { mode:'cap2state', secs:5, players:2, rounds:5, size:'all', input:'voice' },
     names: [],
     avatars: [],
     game: null            // { names, scores, turn, total, deck, phase, q, result, deadline, lastId }
@@ -11243,6 +11299,7 @@
         if(st.players>=1 && st.players<=6) CH.settings.players = st.players|0;
         if(CH_ROUNDS.indexOf(st.rounds)>=0) CH.settings.rounds = st.rounds;
         if(CH_SIZES.indexOf(st.size)>=0) CH.settings.size = st.size;
+        if(st.input==='voice' || st.input==='text') CH.settings.input = st.input;
       }
       if(v && Array.isArray(v.names)) CH.names = v.names.slice(0,6).map(function(n){ return String(n||'').slice(0,24); });
       if(v && Array.isArray(v.avatars)) CH.avatars = v.avatars.slice(0,6).map(function(a){ return a|0; });
@@ -11311,6 +11368,15 @@
       fEl.appendChild(kindBtn(k, k===from, function(){ CH.settings.mode = k+'2'+guess; chSavePrefs(); renderChallengeSetup(); }));
     });
     document.getElementById('ch-example').innerHTML = '<span>'+chEsc(T('ch.example'))+'</span>' + chModeExample(CH.settings.mode);
+    var iEl = document.getElementById('ch-input'); iEl.innerHTML = '';
+    [['voice','lang','sea'],['text',null,'butter']].forEach(function(o){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'ch-mode'; b.setAttribute('role','radio');
+      b.setAttribute('aria-checked', CH.settings.input===o[0] ? 'true':'false'); b.dataset.input = o[0];
+      b.innerHTML = '<span class="peb-ico peb-'+o[2]+'">'+(o[1] ? ICONS[o[1]] : "<svg class=\"i\" viewBox=\"0 0 32 32\" fill=\"none\" stroke=\"#9A6700\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"8.5\" width=\"25\" height=\"16\" rx=\"4\" fill=\"#FFD166\"/><path d=\"M8.5 13.5 h1 M13 13.5 h1 M17.5 13.5 h1 M22 13.5 h1 M8.5 17.5 h1 M22 17.5 h1\"/><path d=\"M12.5 19.5 h7\" stroke=\"#FFFFFF\" stroke-width=\"2.6\"/></svg>")+'</span><span class="ch-mtitle">'+chEsc(T('ch.input.'+o[0]))+'</span>';
+      b.addEventListener('click', function(){ CH.settings.input = o[0]; chSavePrefs(); renderChallengeSetup(); });
+      iEl.appendChild(b);
+    });
 
     var stepEl = document.getElementById('ch-steppers');
     stepEl.innerHTML = '';
@@ -11324,7 +11390,8 @@
       more.addEventListener('click', function(){ var i = values.indexOf(CH.settings[key]); if(i<values.length-1){ CH.settings[key] = values[i+1]; chSavePrefs(); renderChallengeSetup(); } });
       stepEl.appendChild(wrap);
     }
-    stepper('secs', 'ch.secs.title', CH_SECS, function(v){ return v+' s'; });
+    stepper('secs', 'ch.secs.title', CH_SECS, function(v){ return v ? v+' s' : '∞'; });
+    var secsVal = document.getElementById('ch-val-secs'); if(secsVal && !CH.settings.secs) secsVal.title = T('ch.secs.inf');
     stepper('players', 'ch.players.title', [1,2,3,4,5,6], function(v){ return String(v); });
     stepper('rounds', 'ch.rounds.title', CH_ROUNDS, function(v){ return String(v); });
 
@@ -11338,7 +11405,7 @@
     });
 
     var q = CH.settings.players * CH.settings.rounds;
-    document.getElementById('ch-summary').textContent = T(q===1 ? 'ch.summary.one' : 'ch.summary', {q:q, s:CH.settings.secs});
+    document.getElementById('ch-summary').textContent = CH.settings.secs ? T(q===1 ? 'ch.summary.one' : 'ch.summary', {q:q, s:CH.settings.secs}) : T(q===1 ? 'ch.summary.inf.one' : 'ch.summary.inf', {q:q});
   }
   document.getElementById('btn-back-challenge').addEventListener('click', function(){ showScreen('menu'); });
   document.getElementById('ch-to-names').addEventListener('click', function(){ renderChallengeNames(); showScreen('challenge-names'); window.scrollTo(0,0); var f = document.querySelector('#ch-names input'); if(f && window.matchMedia && window.matchMedia('(pointer:fine)').matches) f.focus(); });
@@ -11481,11 +11548,11 @@
       g.turn++;
       if(g.turn >= g.total){ chShowEnd(); return; }
     }
-    g.q = chDraw(); g.result = null; g.phase = 'ask';
-    g.deadline = performance.now() + g.settings.secs*1000;
+    g.q = chDraw(); g.result = null; g.phase = 'ask'; g.typed = ''; g.suggestion = null; g.wrongTyped = '';
+    g.deadline = g.settings.secs ? performance.now() + g.settings.secs*1000 : Infinity;
     chLastTick = -1;
     renderChallengePlay();
-    chStartTimer();
+    if(g.settings.secs) chStartTimer();
   }
   // "Rivela risposta" (o tempo scaduto): si mostra la risposta e si passa ai pulsanti Indovinata / Non indovinata.
   // Lo scadere del tempo NON decide da solo: è chi tiene il telefono a giudicare.
@@ -11517,7 +11584,7 @@
       var sec = Math.ceil(left/1000);
       if(num){ num.textContent = sec; num.classList.toggle('low', low); }
       if(low && sec!==chLastTick && sec>0){ chLastTick = sec; chTick(); }
-      if(left<=0){ chRaf = null; chReveal(true); return; }
+      if(left<=0){ chRaf = null; if(g.settings.input==='text') chSubmitTyped(true); else chReveal(true); return; }
       chRaf = requestAnimationFrame(loop);
     };
     chRaf = requestAnimationFrame(loop);
@@ -11581,14 +11648,19 @@
       var ic = CH_KIND_ICON[chFrom(st.mode)];
       top = who;
       mid = '<div class="ch-qlabel">'+chEsc(T('ch.q.'+st.mode))+'</div><div class="ch-placeholder peb-'+ICON_PEB[ic]+'">'+ICONS[ic]+'</div>';
-      info = '<div class="ch-info">'+chEsc(T('ch.show.hint', {s:st.secs}))+'</div>';
+      info = '<div class="ch-info">'+chEsc(T((st.input==='text' ? 'ch.show.hint.text' : 'ch.show.hint') + (st.secs ? '' : '.inf'), {s:st.secs}))+'</div>';
       bot = '<button type="button" class="ch-show" id="ch-show">'+chEsc(T('ch.show'))+'</button>';
     } else if(g.phase==='ask'){
       var total = st.secs*1000, left = Math.max(0, g.deadline - performance.now());
       top = who;
       mid = '<div class="ch-qlabel">'+chEsc(T('ch.q.'+st.mode))+'</div>' + chPromptHtml(g.q, st.mode);
-      info = '<div class="ch-timer"><div class="ch-track"><div class="ch-fill" id="ch-fill" style="width:'+(100*left/total)+'%"></div></div><span class="ch-secs" id="ch-secs">'+Math.ceil(left/1000)+'</span></div>';
-      bot = '<button type="button" class="ch-show ch-reveal-btn" id="ch-reveal-btn">'+chEsc(T('ch.reveal'))+'</button>';
+      info = st.secs ? '<div class="ch-timer"><div class="ch-track"><div class="ch-fill" id="ch-fill" style="width:'+(100*left/total)+'%"></div></div><span class="ch-secs" id="ch-secs">'+Math.ceil(left/1000)+'</span></div>' : '<div class="ch-inf" title="'+chEsc(T('ch.secs.inf'))+'">∞</div>';
+      if(st.input==='text'){
+        mid += '<div class="ch-suggest" id="ch-suggest" aria-live="polite"></div>';
+        bot = '<div class="ch-type-row"><input type="text" class="ch-type" id="ch-type" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="send" maxlength="60" placeholder="'+chEsc(T('ch.type.ph'))+'" aria-label="'+chEsc(T('ch.type.ph'))+'"><button type="button" class="ch-send" id="ch-send">'+chEsc(T('ch.type.send'))+'</button><button type="button" class="ch-skip" id="ch-skip">'+chEsc(T('ch.type.skip'))+'</button></div>';
+      } else {
+        bot = '<button type="button" class="ch-show ch-reveal-btn" id="ch-reveal-btn">'+chEsc(T('ch.reveal'))+'</button>';
+      }
     } else if(g.phase==='judge'){
       top = '<div class="ch-judge">'+chEsc(T(solo ? 'ch.judge.solo' : 'ch.judge', {name:g.names[cur]}))+'</div>';
       mid = '<div class="ch-reveal"><div class="ch-qlabel">'+chEsc(T('ch.answer'))+'</div>'+chGivenHtml(g.q, st.mode)+chAnswerHtml(g.q, st.mode)+'</div>';
@@ -11596,12 +11668,13 @@
       bot = '<div class="ch-answer-btns"><button type="button" class="ch-yes" id="ch-yes">'+CH_ANSWER_SVG.yes+'<span>'+chEsc(T('ch.yes'))+'</span></button>'
         + '<button type="button" class="ch-no" id="ch-no">'+CH_ANSWER_SVG.no+'<span>'+chEsc(T('ch.no'))+'</span></button></div>';
     } else if(g.phase==='result'){
-      var resTxt = g.result==='yes' ? T('ch.res.yes', {name:g.names[cur]}) : T('ch.res.no');
+      var resTxt = g.result==='yes' ? T('ch.res.yes', {name:g.names[cur]}) : g.result==='wrong' ? T('ch.res.wrong') : g.result==='timeout' ? T('ch.res.timeout') : T('ch.res.no');
       var last = g.turn+1 >= g.total;
       var nextIdx = (g.turn+1) % g.names.length;
       top = '<div class="ch-result '+(g.result==='yes'?'yes':'no')+'">'+chEsc(resTxt)+'</div>';
       mid = '<div class="ch-reveal"><div class="ch-qlabel">'+chEsc(T('ch.answer'))+'</div>'+chGivenHtml(g.q, st.mode)+chAnswerHtml(g.q, st.mode)+'</div>';
-      info = (!last && !solo) ? '<div class="ch-info">'+chEsc(T('ch.nextq.who', {name:g.names[nextIdx]}))+'</div>' : '';
+      info = (st.input==='text' && g.typed) ? '<div class="ch-info">'+chEsc(T('ch.typed', {t:g.typed}))+'</div>'
+        : (!last && !solo) ? '<div class="ch-info">'+chEsc(T('ch.nextq.who', {name:g.names[nextIdx]}))+'</div>' : '';
       bot = '<button type="button" class="ch-show" id="ch-show">'+chEsc(last ? T('ch.finish') : T('ch.nextq'))+'</button>';
     }
     document.getElementById('ch-stage').innerHTML =
@@ -11612,6 +11685,7 @@
       if(g.phase==='result'){ var wait = chNextGuardUntil - Date.now(); if(wait>0){ var nb = b; nb.disabled = true; setTimeout(function(){ if(nb.isConnected) nb.disabled = false; }, wait); } }
     }
     if((b = document.getElementById('ch-reveal-btn'))) b.addEventListener('click', function(){ chReveal(false); });
+    if(g.phase==='ask' && st.input==='text') chWireTypeInput();
     if((b = document.getElementById('ch-yes'))) b.addEventListener('click', function(){ chFinish('yes'); });
     if((b = document.getElementById('ch-no'))) b.addEventListener('click', function(){ chFinish('no'); });
   }
@@ -11622,8 +11696,184 @@
     var tag = (ev.target && ev.target.tagName) || '';
     if(tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT') return;
     if(CH.game.phase==='ready' || CH.game.phase==='result'){ ev.preventDefault(); chAsk(); }
-    else if(CH.game.phase==='ask'){ ev.preventDefault(); chReveal(false); }
+    else if(CH.game.phase==='ask'){ ev.preventDefault(); if(CH.game.settings.input==='text') chSubmitTyped(false); else chReveal(false); }
   });
+
+  /* ---- Sfida: risposta scritta ----
+     Con "Rispondi: Scrivendo" chi è di turno scrive la risposta e preme Invio. Il sito controlla da solo:
+     maiuscole, accenti, spazi e apostrofi non contano, vale anche il nome nell'altra lingua (e alcuni nomi
+     comuni, es. Olanda, USA), e un piccolo errore di battitura viene perdonato. Mentre scrive, se il testo
+     somiglia a un nome che esiste (stato o capitale, tra TUTTI i 195, così non si svela la risposta),
+     compare "Intendi: …?": si clicca o si preme Tab per completare. */
+  var CH_ALIASES = {
+    state: {
+      US:['usa','stati uniti d america','america','united states of america','us'],
+      GB:['uk','gran bretagna','great britain','inghilterra','england'],
+      CD:['repubblica democratica del congo','democratic republic of the congo','congo kinshasa','rdc','drc'],
+      CG:['repubblica del congo','congo','congo brazzaville'],
+      CF:['repubblica centrafricana'], CZ:['repubblica ceca','cechia','czechia'], DO:['repubblica dominicana'],
+      MM:['birmania','burma'], NL:['olanda','holland'], CI:['cote d ivoire'], MK:['macedonia'],
+      SZ:['swaziland'], TL:['timor leste','east timor'], CV:['cabo verde'], AE:['emirati','uae'],
+      VA:['vaticano','vatican'], BA:['bosnia'], VC:['saint vincent'], KN:['saint kitts']
+    },
+    cap: { US:['washington'] }
+  };
+  function chNorm(str){
+    var s = String(str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    s = s.replace(/^\s*(il|lo|la|l'|l’|i|gli|le|the)\s+/,'');
+    return s.replace(/[^a-z0-9]/g,'');
+  }
+  var chCandCache = {};
+  // Tutti i nomi possibili di un tipo (state | cap): ognuno porta il paese a cui appartiene.
+  function chCandidates(kind){
+    if(chCandCache[kind]) return chCandCache[kind];
+    var out = [], seen = {};
+    function add(raw, c){
+      var n = chNorm(raw); if(!n) return;
+      var key = n+'|'+c.id; if(seen[key]) return; seen[key] = 1;
+      out.push({ n:n, c:c });
+    }
+    DATA.countries.forEach(function(c){
+      var names = kind==='cap' ? [c.capitalIt, c.capital] : [c.it, c.en];
+      names.forEach(function(nm){
+        if(!nm) return;
+        add(nm, c);
+        var m = /^(.*?)\s*\((.*)\)\s*$/.exec(nm);
+        if(m){ add(m[1], c); add(m[2], c); }
+      });
+      ((CH_ALIASES[kind]||{})[c.cca2]||[]).forEach(function(a){ add(a, c); });
+    });
+    chCandCache[kind] = out;
+    return out;
+  }
+  function chKindName(c, kind){ return kind==='cap' ? capitalName(c) : countryName(c); }
+  function chDist(a, b){   // Damerau-Levenshtein (trasposizioni comprese)
+    var la = a.length, lb = b.length, d = [], i, j;
+    for(i=0;i<=la;i++){ d[i] = [i]; }
+    for(j=0;j<=lb;j++){ d[0][j] = j; }
+    for(i=1;i<=la;i++) for(j=1;j<=lb;j++){
+      var cost = a[i-1]===b[j-1] ? 0 : 1;
+      d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost);
+      if(i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2]+1);
+    }
+    return d[la][lb];
+  }
+  function chTypoTol(len){ return len>=9 ? 2 : len>=4 ? 1 : 0; }
+  // Suggerimento per "Intendi: …?" — null se il testo è già esattamente un nome nella lingua del sito.
+  function chSuggest(typed, kind){
+    var t = chNorm(typed); if(t.length<2) return null;
+    var cands = chCandidates(kind), best = null, bestScore = 1e9;
+    for(var k=0;k<cands.length;k++){
+      var cd = cands[k], score;
+      if(cd.n===t) score = 0;
+      else if(t.length>=3 && cd.n.indexOf(t)===0) score = 1 + cd.n.length/100;          // completamento
+      else {
+        if(Math.abs(cd.n.length - t.length) > 3) continue;
+        var dd = chDist(t, cd.n);
+        if(dd > Math.max(1, Math.floor(t.length/3))) continue;
+        score = 2 + dd;
+      }
+      if(score < bestScore){ bestScore = score; best = cd; }
+    }
+    if(!best) return null;
+    var display = chKindName(best.c, kind);
+    if(chNorm(display)===t) return null;
+    return display;
+  }
+  // Giudizio della risposta scritta: esatta (in qualsiasi lingua/alias) oppure con un piccolo errore di battitura.
+  function chJudgeTyped(typed, correct, kind){
+    var t = chNorm(typed); if(!t) return false;
+    var cands = chCandidates(kind), k;
+    var exact = cands.filter(function(cd){ return cd.n===t; });
+    if(exact.length) return exact.some(function(cd){ return cd.c.id===correct.id; });
+    var tol = chTypoTol(t.length); if(!tol) return false;
+    var bestD = 1e9, bestIds = {};
+    for(k=0;k<cands.length;k++){
+      if(Math.abs(cands[k].n.length - t.length) > tol) continue;
+      var dd = chDist(t, cands[k].n);
+      if(dd < bestD){ bestD = dd; bestIds = {}; }
+      if(dd === bestD) bestIds[cands[k].c.id] = 1;
+    }
+    return bestD <= tol && bestIds[correct.id] && Object.keys(bestIds).length===1;
+  }
+  function chSubmitTyped(fromTimeout){
+    var g = CH.game; if(!g || g.phase!=='ask' || g.settings.input!=='text') return;
+    var inp = document.getElementById('ch-type');
+    var typed = (inp ? inp.value : g.typed || '').trim();
+    if(!typed && !fromTimeout) return;   // Invio a vuoto non fa nulla
+    var good = !!typed && chJudgeTyped(typed, g.q, chTo(g.settings.mode));
+    if(!good && !fromTimeout){
+      // Sbagliata: si mostra l'errore ma si resta sulla domanda (si riprova finché scade il tempo o "Non la so")
+      g.typed = typed; g.wrongTyped = typed; g.suggestion = null;
+      playWrongSound();
+      var box = document.getElementById('ch-suggest');
+      if(box){ box.textContent = T('ch.type.wrong', {t:typed}); box.classList.add('on','err'); }
+      if(inp){ inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); inp.focus(); try{ inp.select(); }catch(e){} }
+      return;
+    }
+    chStopTimer();
+    var p = chCurrent();
+    g.typed = typed || g.wrongTyped || '';
+    g.phase = 'result';
+    g.result = good ? 'yes' : 'timeout';
+    if(g.result==='yes'){ g.scores[p]++; playCorrectSound(); }
+    chNextGuardUntil = Date.now() + 450;
+    renderChallengePlay(g.result==='yes' ? p : -1);
+  }
+  function chGiveUp(){
+    var g = CH.game; if(!g || g.phase!=='ask') return;
+    chStopTimer();
+    var inp = document.getElementById('ch-type');
+    g.typed = g.wrongTyped || '';
+    g.phase = 'result'; g.result = 'no';
+    chNextGuardUntil = Date.now() + 450;
+    renderChallengePlay(-1);
+  }
+  function chUpdateSuggest(){
+    var g = CH.game, inp = document.getElementById('ch-type'), box = document.getElementById('ch-suggest');
+    if(!g || !inp || !box) return;
+    if(g.wrongTyped && inp.value.trim()===g.wrongTyped) return;
+    box.classList.remove('err');
+    g.typed = inp.value;
+    var sug = chSuggest(inp.value, chTo(g.settings.mode));
+    g.suggestion = sug;
+    if(sug){
+      box.innerHTML = '<span>'+chEsc(T('ch.suggest'))+'</span> <button type="button" class="ch-sug-btn" id="ch-sug-btn">'+chEsc(sug)+'</button><span>?</span> <kbd class="ch-kbd">Tab</kbd>';
+      box.classList.add('on');
+      document.getElementById('ch-sug-btn').addEventListener('mousedown', function(ev){ ev.preventDefault(); });  // non togliere il focus al campo
+      document.getElementById('ch-sug-btn').addEventListener('click', function(){ chApplySuggest(); });
+    } else { box.innerHTML = ''; box.classList.remove('on'); }
+  }
+  function chApplySuggest(){
+    var g = CH.game, inp = document.getElementById('ch-type');
+    if(!g || !inp || !g.suggestion) return false;
+    inp.value = g.suggestion; g.typed = inp.value;
+    inp.focus();
+    try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
+    chUpdateSuggest();
+    return true;
+  }
+  function chWireTypeInput(){
+    var g = CH.game, inp = document.getElementById('ch-type'); if(!inp) return;
+    inp.value = g.typed || '';
+    inp.addEventListener('input', chUpdateSuggest);
+    inp.addEventListener('keydown', function(ev){
+      if(ev.key==='Enter'){ ev.preventDefault(); chSubmitTyped(false); }
+      else if(ev.key==='Escape'){ ev.preventDefault(); chGiveUp(); }
+      else if(ev.key==='Tab' && !ev.shiftKey && g.suggestion){ ev.preventDefault(); chApplySuggest(); }
+    });
+    var skip = document.getElementById('ch-skip');
+    if(skip){ skip.addEventListener('mousedown', function(ev){ ev.preventDefault(); }); skip.addEventListener('click', chGiveUp); }
+    var send = document.getElementById('ch-send');
+    if(send){
+      send.addEventListener('mousedown', function(ev){ ev.preventDefault(); });
+      send.addEventListener('click', function(){ chSubmitTyped(false); });
+    }
+    chUpdateSuggest();
+    if(g.wrongTyped && inp.value.trim()===g.wrongTyped){ var bx = document.getElementById('ch-suggest'); if(bx){ bx.textContent = T('ch.type.wrong', {t:g.wrongTyped}); bx.classList.add('on','err'); } }
+    inp.focus();
+    try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
+  }
 
   /* ---- classifica finale ---- */
   function chShowEnd(){
