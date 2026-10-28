@@ -759,6 +759,12 @@
   #ch-edit-cta{ gap:10px; }
   .ch-end-rec{ margin-top:8px; font-weight:800; font-size:.92rem; color:#6B4A00; }
   .ch-end-rec.new{ display:inline-block; background:#FFF1C9; border-radius:12px; padding:4px 12px; box-shadow:0 3px 0 #EFD58A; animation:chBump .8s ease; }
+
+  /* ---- Sfida V53: tempo nelle sfide salvate ---- */
+  .ch-rank-row .tm{ font-size:.82rem; font-weight:800; color:var(--ink-soft); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .ch-rank-row.first .tm{ color:#6B5A2A; }
+  .ch-time-note{ font-size:.78rem; font-weight:700; color:var(--ink-soft); margin-top:4px; }
+  @media (max-width:480px){ .ch-rank-row{ gap:8px; padding:10px 10px; } .ch-rank-row .pos{ width:1.1em; } .ch-rank-row .nm{ overflow-wrap:normal; word-break:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ch-rank-row .pt{ font-size:.85rem; } .ch-end-rec{ font-size:.85rem; } }
 </style>
 
 <div id="app">
@@ -8174,6 +8180,12 @@
       "ch.kind.cap":"Capitale",
       "ch.kind.flag":"Bandiera",
       "ch.example":"Esempio:",
+      "chs.rec.t":"Record: {s}/{n} in {t} · {name} · {d}",
+      "chs.end.rec.t":"Record di «{name}»: {s}/{n} in {t} · {who}",
+      "chs.hist.win.t":"{d} · vince {name} ({s}/{n}, {t})",
+      "chs.hist.solo.t":"{d} · {name}: {s}/{n} in {t}",
+      "chs.time.note":"A parità di punti vince chi ha risposto più in fretta.",
+      "chs.time.lbl":"tempo",
       "chs.title":"Le tue sfide",
       "chs.count":"{n} di 3 salvate",
       "chs.hint":"Salva fino a 3 sfide con le tue impostazioni e i tuoi stati: per ognuna il sito tiene il record e lo storico delle partite.",
@@ -8471,6 +8483,12 @@
       "ch.kind.cap":"Capital",
       "ch.kind.flag":"Flag",
       "ch.example":"Example:",
+      "chs.rec.t":"Record: {s}/{n} in {t} · {name} · {d}",
+      "chs.end.rec.t":"Record for “{name}”: {s}/{n} in {t} · {who}",
+      "chs.hist.win.t":"{d} · {name} wins ({s}/{n}, {t})",
+      "chs.hist.solo.t":"{d} · {name}: {s}/{n} in {t}",
+      "chs.time.note":"On equal points, whoever answered faster wins.",
+      "chs.time.lbl":"time",
       "chs.title":"Your challenges",
       "chs.count":"{n} of 3 saved",
       "chs.hint":"Save up to 3 challenges with your own settings and countries: for each one the site keeps the record and the history of games.",
@@ -11405,8 +11423,9 @@
     var nm = names || [];
     if(!names){ for(var i=0;i<n;i++){ var v = (CH.names[i]||'').trim(); nm.push(v || T('ch.player.default', {n:i+1})); } }
     var scores = []; for(var j=0;j<n;j++) scores.push(0);
+    var times = []; for(var jt=0;jt<n;jt++) times.push(0);
     chEnsureAvatars(n);
-    CH.game = { names:nm, avatars:CH.avatars.slice(0,n), scores:scores, turn:0, total:n*CH.settings.rounds, deck:[], phase:'ready', q:null, result:null, deadline:0, lastId:null, settings:JSON.parse(JSON.stringify(CH.settings)), savedId: CH.playing || null, stateIds: chsStateIds(CH.playing) };
+    CH.game = { names:nm, avatars:CH.avatars.slice(0,n), scores:scores, turn:0, total:n*CH.settings.rounds, deck:[], phase:'ready', q:null, result:null, deadline:0, lastId:null, times:times, settings:JSON.parse(JSON.stringify(CH.settings)), savedId: CH.playing || null, stateIds: chsStateIds(CH.playing) };
     chRequestWakeLock();
     showScreen('challenge-play');
     renderChallengePlay();
@@ -11435,7 +11454,7 @@
       g.turn++;
       if(g.turn >= g.total){ chShowEnd(); return; }
     }
-    g.q = chDraw(); g.qmode = chQMode(g.q, g.settings.mode); g.result = null; g.phase = 'ask'; g.typed = ''; g.suggestion = null; g.wrongTyped = ''; g.wrongCount = 0;
+    g.q = chDraw(); g.qmode = chQMode(g.q, g.settings.mode); g.result = null; g.phase = 'ask'; g.typed = ''; g.suggestion = null; g.wrongTyped = ''; g.wrongCount = 0; g.qStart = performance.now(); g.qTimed = false;
     g.deadline = g.settings.secs ? performance.now() + g.settings.secs*1000 : Infinity;
     chLastTick = -1;
     renderChallengePlay();
@@ -11446,6 +11465,7 @@
   function chReveal(timedOut){
     var g = CH.game; if(!g || g.phase!=='ask') return;
     chStopTimer();
+    chClockStop(g);
     g.phase = 'judge'; g.timedOut = !!timedOut;
     chNextGuardUntil = Date.now() + 450;
     renderChallengePlay();
@@ -11698,6 +11718,7 @@
       if(g.settings.errors && g.wrongCount >= g.settings.errors){
         // errori finiti: la domanda si chiude senza punto, con la risposta giusta
         chStopTimer();
+        chClockStop(g);
         g.phase = 'result'; g.result = 'out';
         chNextGuardUntil = Date.now() + 450;
         renderChallengePlay(-1);
@@ -11713,9 +11734,28 @@
     g.typed = typed || g.wrongTyped || '';
     g.phase = 'result';
     g.result = good ? 'yes' : 'timeout';
+    chClockStop(g);
     if(g.result==='yes'){ g.scores[p]++; playCorrectSound(); }
     chNextGuardUntil = Date.now() + 450;
     renderChallengePlay(g.result==='yes' ? p : -1);
+  }
+  function chClockStop(g){
+    if(!g || g.qTimed || !g.times) return;
+    g.qTimed = true;
+    var ms = Math.max(0, performance.now() - (g.qStart || performance.now()));
+    if(g.settings.secs) ms = Math.min(ms, g.settings.secs*1000);
+    g.times[chCurrent()] += ms;
+  }
+  function chFmtMs(ms){
+    var sec = (ms||0)/1000;
+    if(sec < 60) return (LANG==='en' ? sec.toFixed(1) : sec.toFixed(1).replace('.', ',')) + ' s';
+    var m = Math.floor(sec/60), r = Math.floor(sec%60);
+    return m + ':' + String(r).padStart(2,'0');
+  }
+  // Ordine della classifica: punti, poi (solo nelle sfide salvate) tempo più basso.
+  function chRankCmp(g){
+    var useT = !!(g.savedId && g.times);
+    return function(a, b){ return g.scores[b]-g.scores[a] || (useT ? g.times[a]-g.times[b] : 0) || a-b; };
   }
   function chWrongMsg(g){
     var lim = g.settings.errors, left = lim ? lim - (g.wrongCount||0) : 0;
@@ -11727,6 +11767,7 @@
     chStopTimer();
     var inp = document.getElementById('ch-type');
     g.typed = g.wrongTyped || '';
+    chClockStop(g);
     g.phase = 'result'; g.result = 'no';
     chNextGuardUntil = Date.now() + 450;
     renderChallengePlay(-1);
@@ -12051,9 +12092,10 @@
   function renderChallengeEnd(){
     var g = CH.game, st = g.settings;
     setReportIcon(document.getElementById('ch-end-icon'), 'trophy');
-    var order = g.names.map(function(n,i){ return i; }).sort(function(a,b){ return g.scores[b]-g.scores[a] || a-b; });
+    var useT = !!(g.savedId && g.times);
+    var order = g.names.map(function(n,i){ return i; }).sort(chRankCmp(g));
     var best = g.scores[order[0]];
-    var winners = order.filter(function(i){ return g.scores[i]===best; });
+    var winners = order.filter(function(i){ return g.scores[i]===best && (!useT || g.times[i]===g.times[order[0]]); });
     var title;
     if(g.names.length===1) title = T('ch.end.solo', {s:g.scores[0], n:st.rounds});
     else if(winners.length===1) title = T('ch.end.win', {name:g.names[winners[0]]});
@@ -12065,19 +12107,25 @@
     if(svEnd && svEnd.best){
       var recEl = document.createElement('div');
       recEl.className = 'ch-end-rec' + (g.newRecord ? ' new' : '');
-      recEl.textContent = g.newRecord ? T('chs.newrec', {name:svEnd.name}) + ' ' + svEnd.best.s + '/' + svEnd.best.n : T('chs.end.rec', {name:svEnd.name, s:svEnd.best.s, n:svEnd.best.n, who:svEnd.best.name});
+      var bt = svEnd.best.t!=null ? chFmtMs(svEnd.best.t) : null;
+      recEl.textContent = g.newRecord ? T('chs.newrec', {name:svEnd.name}) + ' ' + svEnd.best.s + '/' + svEnd.best.n + (bt ? ' · ' + bt : '')
+        : (bt ? T('chs.end.rec.t', {name:svEnd.name, s:svEnd.best.s, n:svEnd.best.n, t:bt, who:svEnd.best.name}) : T('chs.end.rec', {name:svEnd.name, s:svEnd.best.s, n:svEnd.best.n, who:svEnd.best.name}));
       subEl.appendChild(document.createElement('br')); subEl.appendChild(recEl);
     }
     var rank = document.getElementById('ch-rank');
     rank.innerHTML = '';
     var pos = 0, prev = null;
     order.forEach(function(i, k){
-      if(g.scores[i]!==prev){ pos = k+1; prev = g.scores[i]; }
+      var key = g.scores[i] + (useT ? '|' + g.times[i] : '');
+      if(key!==prev){ pos = k+1; prev = key; }
       var row = document.createElement('div');
-      row.className = 'ch-rank-row' + (g.scores[i]===best ? ' first':'');
-      row.innerHTML = '<span class="pos">'+pos+'</span>' + chDot(i) + '<span class="nm">'+chEsc(g.names[i])+'</span><span class="pt">'+chEsc(T(g.scores[i]===1?'ch.pts.one':'ch.pts', {n:g.scores[i]}))+'</span>';
+      row.className = 'ch-rank-row' + (winners.indexOf(i)>=0 ? ' first':'');
+      row.innerHTML = '<span class="pos">'+pos+'</span>' + chDot(i) + '<span class="nm">'+chEsc(g.names[i])+'</span>'
+        + (useT ? '<span class="tm" title="'+chEsc(T('chs.time.lbl'))+'">'+chEsc(chFmtMs(g.times[i]))+'</span>' : '')
+        + '<span class="pt">'+chEsc(T(g.scores[i]===1?'ch.pts.one':'ch.pts', {n:g.scores[i]}))+'</span>';
       rank.appendChild(row);
     });
+    if(useT && g.names.length>1){ var note = document.createElement('div'); note.className = 'ch-time-note'; note.textContent = T('chs.time.note'); rank.appendChild(note); }
     var act = document.getElementById('ch-end-actions');
     act.innerHTML = '';
     function add(label, cls, fn){ var b = document.createElement('button'); b.className = 'btn '+cls; b.textContent = label; b.addEventListener('click', fn); act.appendChild(b); }
@@ -12152,13 +12200,14 @@
   function chsRecordPlay(g){
     var list = chsLoad(), sv = list.filter(function(x){ return x.id===g.savedId; })[0];
     if(!sv) return false;
-    var best = -1, who = [];
-    g.scores.forEach(function(s, i){ if(s > best){ best = s; who = [i]; } else if(s===best) who.push(i); });
-    var play = { d: Date.now(), n: g.settings.rounds, p: g.names.map(function(nm, i){ return { n:nm, s:g.scores[i] }; }) };
+    var order = g.names.map(function(n,i){ return i; }).sort(chRankCmp(g));
+    var top = order[0], best = g.scores[top], bestT = g.times ? Math.round(g.times[top]) : null;
+    var who = order.filter(function(i){ return g.scores[i]===best && (!g.times || Math.round(g.times[i])===bestT); });
+    var play = { d: Date.now(), n: g.settings.rounds, p: g.names.map(function(nm, i){ return { n:nm, s:g.scores[i], t: g.times ? Math.round(g.times[i]) : null }; }) };
     sv.plays = [play].concat(sv.plays||[]).slice(0,20);
     sv.count = (sv.count||0) + 1;
-    var isRec = !sv.best || best > sv.best.s;
-    if(isRec) sv.best = { s:best, n:g.settings.rounds, name: who.map(function(i){ return g.names[i]; }).join(', '), d: play.d };
+    var isRec = !sv.best || best > sv.best.s || (best===sv.best.s && bestT!=null && (sv.best.t==null || bestT < sv.best.t));
+    if(isRec) sv.best = { s:best, n:g.settings.rounds, t:bestT, name: who.map(function(i){ return g.names[i]; }).join(', '), d: play.d };
     chsSave(list);
     return isRec;
   }
@@ -12174,10 +12223,12 @@
   }
   function chsHistLine(p){
     var d = chsDate(p.d);
-    if(p.p.length===1) return T('chs.hist.solo', {d:d, name:p.p[0].n, s:p.p[0].s, n:p.n});
-    var best = Math.max.apply(null, p.p.map(function(x){ return x.s; }));
-    var w = p.p.filter(function(x){ return x.s===best; });
-    return w.length===1 ? T('chs.hist.win', {d:d, name:w[0].n, s:best, n:p.n}) : T('chs.hist.tie', {d:d, s:best, n:p.n});
+    var hasT = p.p.every(function(x){ return x.t!=null; });
+    if(p.p.length===1) return hasT ? T('chs.hist.solo.t', {d:d, name:p.p[0].n, s:p.p[0].s, n:p.n, t:chFmtMs(p.p[0].t)}) : T('chs.hist.solo', {d:d, name:p.p[0].n, s:p.p[0].s, n:p.n});
+    var srt = p.p.slice().sort(function(a,b){ return b.s-a.s || (hasT ? a.t-b.t : 0); });
+    var w = srt.filter(function(x){ return x.s===srt[0].s && (!hasT || x.t===srt[0].t); });
+    if(w.length===1) return hasT ? T('chs.hist.win.t', {d:d, name:w[0].n, s:w[0].s, n:p.n, t:chFmtMs(w[0].t)}) : T('chs.hist.win', {d:d, name:w[0].n, s:w[0].s, n:p.n});
+    return T('chs.hist.tie', {d:d, s:srt[0].s, n:p.n});
   }
   function renderChsList(){
     var list = chsLoad();
@@ -12186,7 +12237,7 @@
     list.forEach(function(sv){
       var card = document.createElement('div');
       card.className = 'saved-card chs-card' + (CH.justSaved===sv.id ? ' just-saved' : '');
-      var rec = sv.best ? T('chs.rec', {s:sv.best.s, n:sv.best.n, name:sv.best.name, d:chsDate(sv.best.d)}) : T('chs.rec.none');
+      var rec = sv.best ? (sv.best.t!=null ? T('chs.rec.t', {s:sv.best.s, n:sv.best.n, t:chFmtMs(sv.best.t), name:sv.best.name, d:chsDate(sv.best.d)}) : T('chs.rec', {s:sv.best.s, n:sv.best.n, name:sv.best.name, d:chsDate(sv.best.d)})) : T('chs.rec.none');
       var hist = (sv.plays||[]).slice(0,10).map(function(p){ return '<li>'+chEsc(chsHistLine(p))+'</li>'; }).join('');
       card.innerHTML = '<div class="saved-name">'+chEsc(sv.name)+'</div>'
         + '<div class="saved-sub">'+chEsc(chsSummary(sv))+'</div>'
