@@ -765,6 +765,13 @@
   .ch-rank-row.first .tm{ color:#6B5A2A; }
   .ch-time-note{ font-size:.78rem; font-weight:700; color:var(--ink-soft); margin-top:4px; }
   @media (max-width:480px){ .ch-rank-row{ gap:8px; padding:10px 10px; } .ch-rank-row .pos{ width:1.1em; } .ch-rank-row .nm{ overflow-wrap:normal; word-break:normal; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .ch-rank-row .pt{ font-size:.85rem; } .ch-end-rec{ font-size:.85rem; } }
+
+  /* ---- Sfida V54: tempo che scorre nel tabellone (sfide salvate) ---- */
+  .ch-player .nmw{ flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.15; }
+  .ch-player .nmw .nm{ flex:none; }
+  .ch-player .ptm{ font-size:.74rem; font-weight:800; color:var(--ink-soft); font-variant-numeric:tabular-nums; white-space:nowrap; display:inline-flex; align-items:center; gap:3px; }
+  .ch-player .ptm svg.i{ width:13px; height:13px; }
+  .ch-player.active .ptm.run{ color:#256F8C; }
 </style>
 
 <div id="app">
@@ -11536,7 +11543,8 @@
       var el = document.createElement('div');
       el.className = 'ch-player' + (i===cur ? ' active':'') + (i===bumpIdx ? ' bump':'');
       el.style.setProperty('--pc', col.mid);
-      el.innerHTML = chDot(i) + '<span class="nm">'+chEsc(nm)+'</span><span class="sc">'+g.scores[i]+'</span>';
+      var tm = (g.savedId && g.times) ? '<span class="ptm" id="ch-ptm-'+i+'"><span class="ico">'+ICONS.timer+'</span><span class="v">'+chEsc(chFmtMs(chLiveMs(g, i)))+'</span></span>' : '';
+      el.innerHTML = chDot(i) + (tm ? '<span class="nmw"><span class="nm">'+chEsc(nm)+'</span>'+tm+'</span>' : '<span class="nm">'+chEsc(nm)+'</span>') + '<span class="sc">'+g.scores[i]+'</span>';
       board.appendChild(el);
     });
   }
@@ -11739,6 +11747,25 @@
     chNextGuardUntil = Date.now() + 450;
     renderChallengePlay(g.result==='yes' ? p : -1);
   }
+  // Tempo totale di un giocatore, compresa la domanda in corso (per il cronometro dal vivo).
+  function chLiveMs(g, i){
+    var ms = g.times ? g.times[i] : 0;
+    if(g.phase==='ask' && !g.qTimed && i===chCurrent() && g.qStart){
+      var run = performance.now() - g.qStart;
+      if(g.settings.secs) run = Math.min(run, g.settings.secs*1000);
+      ms += Math.max(0, run);
+    }
+    return ms;
+  }
+  function chLiveTick(){
+    var g = CH.game;
+    if(currentScreenName!=='challenge-play' || !g || !g.savedId || !g.times) return;
+    var cur = chCurrent(), el = document.getElementById('ch-ptm-'+cur);
+    if(!el) return;
+    el.querySelector('.v').textContent = chFmtMs(chLiveMs(g, cur));
+    el.classList.toggle('run', g.phase==='ask' && !g.qTimed);
+  }
+  setInterval(chLiveTick, 100);
   function chClockStop(g){
     if(!g || g.qTimed || !g.times) return;
     g.qTimed = true;
